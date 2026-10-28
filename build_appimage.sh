@@ -83,7 +83,9 @@ EOF
 INTERNAL="$BUILD_DIR/dist/danoverlay/_internal"
 # Tcl extensions other packages install next to Tcl (graphviz's on Arch) can come along; and the
 # libraries AppImages take from the host (the AppImage excludelist): an older bundled fontconfig
-# can't read a newer distro's font config, X11 has to match the server
+# can't read a newer distro's font config, X11 has to match the server, and the graphics stack
+# (GL/EGL/GBM/DRM) has to match the host's drivers, which also need the host's newer libstdc++
+# (with the build distro's one, Mesa's EGL fails to load and Qt WebEngine gets no GL at all)
 rm -rf "$INTERNAL/_tcl_data/graphviz"
 # Qt's UI translations aren't used (the overlay is HTML); Chromium only needs its English locale
 QT_TR="$INTERNAL/PyQt6/Qt6/translations"
@@ -93,7 +95,9 @@ find "$QT_TR/qtwebengine_locales" -type f ! -name 'en-US.pak' -delete
 rm -f "$INTERNAL/PyQt6/Qt6/plugins/platformthemes/libqgtk3.so"
 for lib in libfontconfig.so.1 libfreetype.so.6 libexpat.so.1 libz.so.1 libuuid.so.1 \
            libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libXau.so.6 libXdmcp.so.6 libXext.so.6 \
-           libXrender.so.1 libXft.so.2 libXss.so.1; do
+           libXrender.so.1 libXft.so.2 libXss.so.1 \
+           libstdc++.so.6 libgcc_s.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libEGL.so.1 \
+           libgbm.so.1 libdrm.so.2 libasound.so.2; do
     rm -f "$INTERNAL/$lib"
 done
 
