@@ -49,6 +49,6 @@ cmake --build "$WORK/shim-build"
 cmake --install "$WORK/shim-build"
 
 # only what the app loads: the shim and LayerShellQt's interface library
-cp -L "$PREFIX"/lib*/libdanlayer.so "$OUT/"
-cp -L "$(ls "$PREFIX"/lib*/libLayerShellQtInterface.so.6 | head -1)" "$OUT/"
+cp -L "$(find "$PREFIX" -name libdanlayer.so | head -1)" "$OUT/"
+cp -L "$(find "$PREFIX" -name 'libLayerShellQtInterface.so.6' | head -1)" "$OUT/"
 ls -la "$OUT"
