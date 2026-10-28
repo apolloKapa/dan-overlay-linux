@@ -14,6 +14,19 @@ python3 -m pip install -q aqtinstall
 [[ -d "$WORK/qt/$QT_VERSION" ]] || python3 -m aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 --outputdir "$WORK/qt"
 QT_DIR="$(ls -d "$WORK/qt/$QT_VERSION"/*/ | head -1)"
 PREFIX="$WORK/prefix"
+mkdir -p "$PREFIX"
+
+# Qt 6.11's private Wayland headers need libwayland >= 1.24 (wl_fixes); older distros' is too old.
+# Only its headers and wayland-scanner are used here: at runtime the system's libwayland is.
+python3 -m pip install -q meson ninja
+if [[ ! -d "$WORK/wayland" ]]; then
+    git clone -q --depth 1 --branch "${WAYLAND_TAG:-1.24.0}" https://gitlab.freedesktop.org/wayland/wayland.git "$WORK/wayland"
+fi
+meson setup "$WORK/wayland-build" "$WORK/wayland" --prefix="$PREFIX" --libdir=lib -Ddocumentation=false \
+    -Dtests=false -Ddtd_validation=false >/dev/null 2>&1 || true
+ninja -C "$WORK/wayland-build" install >/dev/null
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+export PATH="$PREFIX/bin:$PATH"
 
 if [[ ! -d "$WORK/ecm" ]]; then
     git clone -q --depth 1 --branch "$ECM_TAG" https://invent.kde.org/frameworks/extra-cmake-modules.git "$WORK/ecm"

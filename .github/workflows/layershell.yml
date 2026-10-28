@@ -12,7 +12,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build pkg-config libwayland-dev wayland-protocols \
+          sudo apt-get install -y cmake ninja-build pkg-config libwayland-dev wayland-protocols libexpat1-dev libffi-dev libxml2-dev \
             libgl-dev libegl-dev libxkbcommon-dev libvulkan-dev
       - name: Build
         env:
