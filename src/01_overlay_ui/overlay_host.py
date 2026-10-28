@@ -497,6 +497,9 @@ def _run_overlay_session(cfg, overlay_url):
         resizable=True,
         on_top=False,   # manual overlay pin toggle via Tab
         background_color="#000000",
+        # Linux: see-through outside the panel's rounded corners (style.css .dan-panel). On
+        # Windows 11 the system rounds the window itself
+        transparent=sys.platform.startswith("linux"),
         text_select=False,
         frameless=_use_frameless,
         easy_drag=_use_frameless,   # drag by clicking anywhere when frameless
