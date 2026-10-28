@@ -25,6 +25,10 @@ import sys
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.normpath(os.path.join(_THIS_DIR, "..", ".."))
+_SRC_DIR = os.path.join(_REPO_ROOT, "src")
+if os.path.isdir(_SRC_DIR) and _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+from wine_compat import wine_command  # noqa: E402
 
 
 def _find_cli() -> str | None:
@@ -140,8 +144,8 @@ _SKILLSET_KEYS = (
 
 
 def is_available() -> bool:
-    """Return True if msd.exe is present and executable."""
-    return _CLI_PATH is not None
+    """Return True if msd.exe is present and can run (through Wine on Linux)."""
+    return _CLI_PATH is not None and wine_command(_CLI_PATH) is not None
 
 
 def calc(osu_path: str, rate: float = 1.0, goal: float = 0.96,
@@ -222,13 +226,19 @@ def _calc_native(osu_path: str, rate: float) -> dict | None:
     etterna_rows, note_count, duration_s = parsed
 
     _no_window = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+    # Linux: msd.exe runs through Wine (wine_compat); None when no Wine is installed
+    cmd = wine_command(_CLI_PATH)
+    if cmd is None:
+        return None
+    argv, env = cmd
     try:
         result = subprocess.run(
-            [_CLI_PATH],
+            argv,
             input=json.dumps(etterna_rows),
             capture_output=True,
             text=True,
             timeout=30,
+            env=env,
             **_no_window,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):

@@ -27,6 +27,8 @@ import time
 import numpy as np
 import requests
 
+from wine_compat import host_env
+
 # ── Locate ffmpeg.exe ────────────────────────────────────────────────────
 # PyInstaller --onefile extracts bundled files to sys._MEIPASS at startup.
 # In development, fall back to PATH.
@@ -184,6 +186,8 @@ class AudioVisualizer:
                 capture_output=True,
                 timeout=30,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                # Linux bundle: the system's ffmpeg, so not the bundled libraries
+                env=host_env(),
             )
             if proc.returncode != 0:
                 return

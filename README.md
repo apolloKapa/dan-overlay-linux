@@ -1,5 +1,20 @@
 # DanOverlay — osu!mania & Etterna 4K/7K Dan Estimation Overlay
 
+> **Linux port.** This fork runs DanOverlay on Linux and builds it as an AppImage. The original is [acarranzao1a-png/Dan-Overlay](https://github.com/acarranzao1a-png/Dan-Overlay) by 8DOUL (MIT).
+>
+> **Run it:** download `DanOverlay-x86_64.AppImage` from the [releases](../../releases), then run `chmod +x DanOverlay-x86_64.AppImage && ./DanOverlay-x86_64.AppImage`. You'll also need:
+> - **tosu** running with osu!. With [osu-winello](https://github.com/NelloKudo/osu-winello), run `osu-wine --tosu` once.
+> - **Wine**, for the MinaCalc MSD (`msd.exe`). osu-winello's own Wine and prefix are found automatically. Set `DANOVERLAY_WINE` or `WINEPREFIX` to use others.
+> - **ffmpeg** (optional), for the audio visualizer.
+>
+> **What changed for Linux:**
+> - tosu's Windows paths (`D:\Songs\…`) are mapped through the Wine prefix (`src/wine_compat.py`).
+> - `msd.exe` runs through Wine, and its results are identical to Windows.
+> - The window uses pywebview's Qt WebEngine backend.
+> - The crash log is written to `~/.local/state/DanOverlay/`.
+>
+> **Build:** `./build_appimage.sh` (pushing a `v*` tag builds a release through GitHub Actions). Etterna detection is still Windows-only.
+
 **DanOverlay** is a high-performance, real-time overlay for **osu!mania** and **Etterna** that estimates your Dan tier and skillset ratings as you select and play charts. It connects seamlessly to live game data ([tosu](https://tosu.app) for osu!mania, lightweight Lua bridges for Etterna), runs state-of-the-art difficulty calculation engines (**ISOR** & **Legacy**), and displays your estimated Dan rank through a GPU-accelerated HTML overlay using [pywebview](https://github.com/r0x0r/pywebview).
 
 ---

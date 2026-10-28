@@ -39,3 +39,4 @@ config/settings.json
 !tools/bin/msd.exe
 !src/01_overlay_ui/ffmpeg/ffmpeg.exe
 !src/01_overlay_ui/ffmpeg/ffprobe.exe
+/.venv-linux/

@@ -15,6 +15,7 @@ from events import (
     TOSU_STATUS, MAP_CHANGED, MUSIC_TIME, OVERLAY_STATE,
 )
 from contracts import MapInfo, STATE_WAITING_TOSU, STATE_IDLE
+from wine_compat import join_tosu_path
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +113,9 @@ def _extract_and_emit(data, event_bus, state):
     folder = bm.get("path", {}).get("folder", "")
     osu_file = bm.get("path", {}).get("file", "")
     bg_file = bm.get("path", {}).get("bg", "")
-    full_path = os.path.join(songs_dir, folder, osu_file) if songs_dir else ""
-    bg_path = os.path.join(songs_dir, folder, bg_file) if (songs_dir and folder and bg_file) else ""
+    # tosu under Wine (Linux) reports Windows paths: map them to the local filesystem
+    full_path = join_tosu_path(songs_dir, folder, osu_file) if songs_dir else ""
+    bg_path = join_tosu_path(songs_dir, folder, bg_file) if (songs_dir and folder and bg_file) else ""
 
     # Metadata
     meta = bm.get("metadata", {})

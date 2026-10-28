@@ -12,8 +12,12 @@ _SELF_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SELF_DIR not in sys.path:
     sys.path.insert(0, _SELF_DIR)
 
-# Log file is saved in the executable directory
-if getattr(sys, "frozen", False):
+# Log file is saved in the executable directory (Linux: ~/.local/state/DanOverlay, since an
+# AppImage's own folder is read-only)
+if sys.platform != "win32" and getattr(sys, "frozen", False):
+    _EXE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "DanOverlay")
+    os.makedirs(_EXE_DIR, exist_ok=True)
+elif getattr(sys, "frozen", False):
     _EXE_DIR = os.path.dirname(sys.executable)
 else:
     _EXE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +59,12 @@ def _global_excepthook(exc_type, exc_value, exc_tb):
     sys.__excepthook__(exc_type, exc_value, exc_tb)
 
 sys.excepthook = _global_excepthook
+
+
+# --- Linux: pywebview's Qt (QtWebEngine) backend ---
+# The Linux build bundles PyQt6-WebEngine; GTK's WebKit can't be bundled into an AppImage.
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("PYWEBVIEW_GUI", "qt")
 
 
 # --- CLR / Pythonnet PyInstaller Windows Fix ---
