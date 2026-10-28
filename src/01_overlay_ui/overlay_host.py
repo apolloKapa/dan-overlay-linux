@@ -941,6 +941,17 @@ def _run_overlay_session(cfg, overlay_url):
 
         _window.expose(toggle_overlay_pin)
 
+        # Linux: pinned when it was last closed -> pinned again (Windows starts unpinned, but there
+        # the pin is one keypress away while osu! isn't covering everything)
+        if sys.platform.startswith("linux"):
+            import linux_pin
+            if linux_pin.was_pinned():
+                def _restore_pin():
+                    import time as _t
+                    _t.sleep(1.5)
+                    toggle_overlay_pin()
+                threading.Thread(target=_restore_pin, daemon=True, name="restore-pin").start()
+
         # 2. Audio service (optional — gated)
         try:
             audio = AudioService(event_bus, stop_event)

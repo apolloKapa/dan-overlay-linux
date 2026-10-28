@@ -24,6 +24,14 @@ else:
 
 _CRASH_LOG = os.path.join(_EXE_DIR, "DanOverlay_error.txt")
 
+# Linux: a log file too (started from the app menu there's no console to see warnings in)
+if sys.platform != "win32" and getattr(sys, "frozen", False):
+    import logging
+    logging.basicConfig(
+        filename=os.path.join(_EXE_DIR, "danoverlay.log"), filemode="w", level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
 
 def _write_crash_log(exc_type=None, exc_value=None, exc_tb=None, extra_msg=""):
     """Writes diagnostic info to DanOverlay_error.txt for end-user debugging."""

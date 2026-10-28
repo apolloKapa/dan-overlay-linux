@@ -136,6 +136,7 @@ class AnalysisCoordinator:
 
         # Validate path exists
         if not map_info.path or not os.path.isfile(map_info.path):
+            logger.warning("map file not found: %r", map_info.path)
             self._bus.emit(ANALYSIS_ERROR, {
                 "md5": map_info.md5,
                 "error": f"File not found: {map_info.path}",

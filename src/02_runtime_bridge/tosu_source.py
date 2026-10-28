@@ -15,7 +15,7 @@ from events import (
     TOSU_STATUS, MAP_CHANGED, MUSIC_TIME, OVERLAY_STATE,
 )
 from contracts import MapInfo, STATE_WAITING_TOSU, STATE_IDLE
-from wine_compat import join_tosu_path
+from wine_compat import join_tosu_path, songs_folder
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ def _extract_and_emit(data, event_bus, state):
     settings = data.get("settings", {})
 
     md5 = bm.get("md5", "")
-    songs_dir = settings.get("folders", {}).get("songs", "")
+    songs_dir = songs_folder(settings.get("folders", {}).get("songs", ""), settings.get("folders", {}).get("game", ""))
     folder = bm.get("path", {}).get("folder", "")
     osu_file = bm.get("path", {}).get("file", "")
     bg_file = bm.get("path", {}).get("bg", "")

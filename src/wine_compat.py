@@ -108,6 +108,17 @@ def wine_to_unix_path(path: str) -> str:
     return _match_case(os.path.normpath(os.path.join(base, rest)))
 
 
+def songs_folder(songs: str, game: str) -> str:
+    """tosu's Songs folder: osu! allows a path relative to the game folder (BeatmapDirectory = Songs)."""
+    if not songs:
+        return songs
+    s = songs.replace("\\", "/")
+    absolute = s.startswith("/") or (len(s) > 1 and s[1] == ":")
+    if absolute or not game:
+        return songs
+    return game.rstrip("\\/") + "\\" + songs
+
+
 def join_tosu_path(*parts: str) -> str:
     """os.path.join for paths built from tosu's fields, mapped to the local filesystem."""
     if IS_WINDOWS:
