@@ -6,6 +6,11 @@
 # into one, at the same spot (libdanlayer.so over KDE's LayerShellQt, see linux/layershell), and
 # unpinning turns it back into a normal window.
 #
+# Where the window goes: niri reports where a floating window is, so it's pinned right there. Other
+# compositors (KDE Plasma's KWin, ...) don't tell, so it goes where it was last pinned (remembered in
+# ~/.config/<app>/pin.json), top-left at first; a pinned window can be moved with move_by().
+# On an X11 session the window just gets Qt's stay-on-top flag instead.
+#
 # Qt window changes have to happen on the GUI thread: call init() on the main thread before the
 # event loop starts; toggle()/pin()/unpin() can then be called from any thread.
 
@@ -23,7 +28,36 @@ logger = logging.getLogger(__name__)
 _lib = None
 _lib_failed = False
 _relay = None
-_state = {"pinned": False, "pos": None}
+_state = {"pinned": False, "pos": None, "widget": None, "x11": False}
+_config_path = None
+
+
+def _load_saved():
+    try:
+        with open(_config_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return (int(data["x"]), int(data["y"])), bool(data.get("pinned", False))
+    except Exception:
+        return None, False
+
+
+def save_position():
+    """Remember where the pinned window is (and whether it's pinned) for the next start."""
+    if not _config_path or _state["pos"] is None:
+        return
+    try:
+        os.makedirs(os.path.dirname(_config_path), exist_ok=True)
+        with open(_config_path, "w", encoding="utf-8") as f:
+            json.dump({"x": _state["pos"][0], "y": _state["pos"][1], "pinned": _state["pinned"]}, f)
+    except OSError:
+        pass
+
+
+def was_pinned(default: bool = False) -> bool:
+    """Whether the window was pinned when the app last closed (default: never run before)."""
+    if not _config_path or not os.path.exists(_config_path):
+        return default
+    return _load_saved()[1]
 
 
 def _load_lib():
@@ -47,9 +81,19 @@ def _load_lib():
     return _lib
 
 
+def _is_x11() -> bool:
+    try:
+        from PyQt6.QtGui import QGuiApplication
+        return QGuiApplication.platformName() == "xcb"
+    except Exception:
+        return False
+
+
 def available() -> bool:
     if not sys.platform.startswith("linux"):
         return False
+    if _is_x11():
+        return True
     lib = _load_lib()
     return bool(lib and lib.danlayer_available())
 
@@ -126,14 +170,26 @@ def _qwindow_ptr(widget):
     return ctypes.c_void_p(sip.unwrapinstance(handle)) if handle is not None else None
 
 
+def _set_x11_on_top(widget, on):
+    from PyQt6.QtCore import Qt
+    widget.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, on)
+    widget.show()
+
+
 def _do_pin(widget, size=None):
+    if _state["pinned"]:
+        return False
+    if _is_x11():
+        _set_x11_on_top(widget, True)
+        _state.update(pinned=True, widget=widget, x11=True)
+        return True
     lib = _load_lib()
-    if not lib or not lib.danlayer_available() or _state["pinned"]:
+    if not lib or not lib.danlayer_available():
         return False
     pos = _window_global_pos()
     if pos is None:
         geo = widget.screen().geometry() if widget.screen() else None
-        pos = _state["pos"] or ((geo.x() + 40, geo.y() + 40) if geo else (40, 40))
+        pos = _state["pos"] or _load_saved()[0] or ((geo.x() + 40, geo.y() + 40) if geo else (40, 40))
     if size:
         widget.resize(*size)
     widget.hide()
@@ -142,14 +198,33 @@ def _do_pin(widget, size=None):
         widget.show()
         return False
     widget.show()
-    _state.update(pinned=True, pos=pos)
+    _state.update(pinned=True, pos=pos, widget=widget)
+    save_position()
     logger.info("linux_pin: pinned at %s", pos)
     return True
 
 
-def _do_unpin(widget):
+def _do_move_by(widget, dx, dy):
     lib = _load_lib()
-    if not lib or not _state["pinned"]:
+    if not lib or not _state["pinned"] or _state["x11"] or _state["pos"] is None:
+        return False
+    x, y = _state["pos"][0] + dx, _state["pos"][1] + dy
+    ptr = _qwindow_ptr(widget)
+    if ptr is None or not lib.danlayer_move(ptr, x, y):
+        return False
+    _state["pos"] = (x, y)
+    return True
+
+
+def _do_unpin(widget):
+    if not _state["pinned"]:
+        return False
+    if _state["x11"]:
+        _set_x11_on_top(widget, False)
+        _state.update(pinned=False, x11=False)
+        return True
+    lib = _load_lib()
+    if not lib:
         return False
     widget.hide()
     ptr = _qwindow_ptr(widget)
@@ -158,15 +233,18 @@ def _do_unpin(widget):
         return False
     widget.show()
     _state["pinned"] = False
+    save_position()
     pos = _state["pos"]
     threading.Thread(target=_restore_position, args=(pos,), daemon=True).start()
     logger.info("linux_pin: unpinned")
     return True
 
 
-def init():
+def init(app_name: str = "danoverlay"):
     """Create the GUI-thread relay. Call on the main thread before the Qt event loop runs."""
-    global _relay
+    global _relay, _config_path
+    config_home = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    _config_path = os.path.join(config_home, app_name, "pin.json")
     if _relay is not None or not sys.platform.startswith("linux"):
         return
     try:
@@ -216,6 +294,11 @@ def pin(widget, size=None) -> bool:
 
 def unpin(widget) -> bool:
     return bool(_on_gui_thread(_do_unpin, widget))
+
+
+def move_by(widget, dx: int, dy: int) -> bool:
+    """Move a pinned window by (dx, dy) (the compositor can't move layer surfaces)."""
+    return bool(_on_gui_thread(_do_move_by, widget, dx, dy))
 
 
 def toggle(widget, size=None) -> bool:
