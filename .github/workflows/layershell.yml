@@ -1,0 +1,24 @@
+name: LayerShell
+
+# Builds linux/layershell (LayerShellQt + the pin shim) on its own, for testing.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config libwayland-dev wayland-protocols \
+            libgl-dev libegl-dev libxkbcommon-dev libvulkan-dev
+      - name: Build
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: ./linux/layershell/build.sh
+      - uses: actions/upload-artifact@v5
+        with:
+          name: danlayer
+          path: linux/layershell/out/

@@ -40,3 +40,5 @@ config/settings.json
 !src/01_overlay_ui/ffmpeg/ffmpeg.exe
 !src/01_overlay_ui/ffmpeg/ffprobe.exe
 /.venv-linux/
+/linux/layershell/work/
+/linux/layershell/out/
