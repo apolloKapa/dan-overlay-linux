@@ -23,7 +23,9 @@ jobs:
         # Qt WebEngine's runtime libraries, so PyInstaller finds and bundles them
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-venv binutils \
+          sudo apt-get install -y python3-venv binutils cmake ninja-build pkg-config \
+            libwayland-dev wayland-protocols libexpat1-dev libffi-dev libxml2-dev \
+            libgl-dev libegl-dev libxkbcommon-dev libvulkan-dev \
             libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 \
             libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libnss3 libasound2 libegl1
 
@@ -31,6 +33,11 @@ jobs:
         run: |
           wget -q -O appimagetool https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
           chmod +x appimagetool
+
+      - name: Build LayerShellQt (pinning above fullscreen games)
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: ./linux/layershell/build.sh
 
       - name: Build AppImage
         env:

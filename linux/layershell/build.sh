@@ -38,8 +38,10 @@ cmake --install "$WORK/ecm-build" >/dev/null
 if [[ ! -d "$WORK/lsq" ]]; then
     git clone -q --depth 1 --branch "$LSQ_TAG" https://invent.kde.org/plasma/layer-shell-qt.git "$WORK/lsq"
 fi
+# RUNPATH $ORIGIN: it sits next to the bundled Qt and must load that one, not the system's
 cmake -S "$WORK/lsq" -B "$WORK/lsq-build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-    -DCMAKE_PREFIX_PATH="$QT_DIR;$PREFIX" -DBUILD_TESTING=OFF
+    -DCMAKE_PREFIX_PATH="$QT_DIR;$PREFIX" -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_RPATH='$ORIGIN' -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
 cmake --build "$WORK/lsq-build" -j"$(nproc)"
 cmake --install "$WORK/lsq-build"
 

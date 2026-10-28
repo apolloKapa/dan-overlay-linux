@@ -888,6 +888,17 @@ def _run_overlay_session(cfg, overlay_url):
             The overlay remains interactive in both states.
             Returns the new pinned state.
             """
+            if sys.platform.startswith("linux"):
+                # Wayland ignores "topmost": pinning makes the window an overlay-layer surface,
+                # which stays above fullscreen osu! (linux_pin)
+                import linux_pin
+                native = getattr(_window, "native", None)
+                if native is not None and linux_pin.available():
+                    _overlay_pin_state["active"] = linux_pin.toggle(native)
+                    logger.info("toggle_overlay_pin -> %s", "PINNED" if _overlay_pin_state["active"] else "UNPINNED")
+                else:
+                    logger.warning("toggle_overlay_pin: layer-shell pinning not available")
+                return _overlay_pin_state["active"]
             if sys.platform != "win32":
                 _overlay_pin_state["active"] = not _overlay_pin_state["active"]
                 return _overlay_pin_state["active"]
@@ -969,5 +980,8 @@ def _run_overlay_session(cfg, overlay_url):
         logger.info("overlay session started with dual osu! and Etterna monitoring")
 
     _icon = str(_WEB_DIR / "graph.ico")
+    if sys.platform.startswith("linux"):
+        import linux_pin
+        linux_pin.init()  # its GUI-thread relay must be created on this (the main) thread
     webview.start(on_start, window, debug=False, icon=_icon)
 

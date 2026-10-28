@@ -20,8 +20,9 @@ if [[ ! -x "$VENV_DIR/bin/python" ]]; then
     python3 -m venv "$VENV_DIR"
 fi
 "$VENV_DIR/bin/python" -m pip install -q --upgrade pip
-"$VENV_DIR/bin/python" -m pip install -q pyinstaller "pywebview[qt]" PyQt6-WebEngine \
-    requests pillow numpy pandas websocket-client tzdata
+# PyQt6's Qt version pinned: linux/layershell builds LayerShellQt against this exact Qt (QT_VERSION)
+"$VENV_DIR/bin/python" -m pip install -q pyinstaller "pywebview[qt]" PyQt6==6.11.0 PyQt6-Qt6==6.11.2 \
+    PyQt6-WebEngine==6.11.0 PyQt6-WebEngine-Qt6==6.11.2 requests pillow numpy pandas websocket-client tzdata
 
 "$VENV_DIR/bin/python" - src/01_overlay_ui/web/graph.ico "$BUILD_DIR/danoverlay.png" <<'EOF'
 import sys
@@ -58,6 +59,7 @@ EOF
     --hidden-import events --hidden-import contracts --hidden-import tosu_source \
     --hidden-import analysis_coordinator --hidden-import bridge --hidden-import audio_service \
     --hidden-import chart_export --hidden-import overlay_host --hidden-import wine_compat \
+    --hidden-import linux_pin \
     --hidden-import parser --hidden-import validator --hidden-import feature_extractor \
     --hidden-import primary_sr_bridge --hidden-import classifier --hidden-import rhythm_profile \
     --hidden-import rank_engine --hidden-import minacalc_estimator --hidden-import minacalc_bridge \
@@ -127,6 +129,15 @@ while True:
         os.remove(os.path.join(root, f))
     print("pruned:", " ".join(sorted(unused)))
 EOF
+
+# pinning above fullscreen games (linux_pin.py): LayerShellQt + libdanlayer.so, next to the Qt
+# they were built for. CI builds them with linux/layershell/build.sh before this script runs.
+LAYERSHELL_OUT="$ROOT_DIR/linux/layershell/out"
+if [[ -f "$LAYERSHELL_OUT/libdanlayer.so" ]]; then
+    cp "$LAYERSHELL_OUT"/*.so* "$INTERNAL/PyQt6/Qt6/lib/"
+else
+    echo "WARNING: linux/layershell/out missing: the overlay can't pin above fullscreen games"
+fi
 
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/lib" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
